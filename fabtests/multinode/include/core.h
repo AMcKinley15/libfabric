@@ -43,13 +43,15 @@
 #include "pattern.h"
 
 #define PM_DEFAULT_OOB_PORT (8228)
+#define NUM_METHODS 2
 
 struct pm_job_info {
 	size_t		my_rank;
 	size_t		num_ranks;
 	int		sock;
 	int		*clients; //only valid for server
-	
+	struct fi_rma_iov 	*fi_iovs;	
+
 	struct sockaddr_storage oob_server_addr;
 	void		*names;
 	size_t		name_len;
@@ -75,6 +77,14 @@ struct multinode_xfer_state {
 
 	uint64_t		tx_flags;
 	uint64_t		rx_flags;
+};
+
+struct multinode_xfer_method {
+	char *name;
+	int (*send) ();
+	int (*recv) ();
+	int (*wait) ();
+	int (*setup) (int, char**);
 };
 
 extern struct pm_job_info pm_job;
