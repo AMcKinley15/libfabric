@@ -274,9 +274,9 @@ static int multinode_run_test()
 static void pm_job_free_res()
 {
 
-		free(pm_job.names);
+	free(pm_job.names);
 
-		free(pm_job.fi_addrs);
+	free(pm_job.fi_addrs);
 }
 
 int multinode_run_tests(int argc, char **argv)
@@ -296,7 +296,6 @@ int multinode_run_tests(int argc, char **argv)
 			printf("failed\n");
 		else 
 			printf("passed\n");
-		
 	}
 	
 	pm_job_free_res();
