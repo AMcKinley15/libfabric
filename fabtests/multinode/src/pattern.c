@@ -84,7 +84,6 @@ static int ring_current(int *cur)
 	
 	*cur = (pm_job.my_rank + 1) % pm_job.num_ranks;
 	return 0; 
-	
 }
 
 static int mesh_next(int *cur)
