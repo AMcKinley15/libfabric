@@ -447,7 +447,7 @@ int multinode_run_tests(int argc, char **argv)
 			return ret;
 		printf("Transfer Method: %s\n", method[i].name);	
 	
-		for (j = 0; j < NUM_TESTS - 1; j++) {
+		for (j = 0; j < NUM_TESTS; j++) {
 			printf("starting %s... ", patterns[j].name);
 			pattern = &patterns[j];
 			ret = multinode_run_test(method[i]);

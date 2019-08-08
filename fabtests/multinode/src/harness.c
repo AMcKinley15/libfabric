@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 	opts.options |= (FT_OPT_SIZE | FT_OPT_ALLOC_MULT_MR);
 
 	pm_job.clients = NULL;
-
+	
 	hints = fi_allocinfo();
 	if (!hints)
 		return EXIT_FAILURE;
