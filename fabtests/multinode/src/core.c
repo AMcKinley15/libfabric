@@ -341,18 +341,19 @@ static int multinode_rma_write() {
 		tx_seq++;
 		state.sends_posted++;
 		state.tx_window--;
+		pm_barrier();
 	}
 	return 0;
 }
 
-static int multinode_rma_recv() {
-	
+static int multinode_rma_recv() 
+{
 	state.all_recvs_posted = true;
 	return 0;
 }
 
-static int multinode_rma_wait() {
-
+static int multinode_rma_wait() 
+{
 	int ret;
 	
 	ret = ft_get_tx_comp(tx_seq);
@@ -458,7 +459,6 @@ int multinode_run_tests(int argc, char **argv)
 				printf("passed\n");
 			}	
 		}
-		
 		ret = send_recv_barrier();
 		if (ret)
 			return ret;
