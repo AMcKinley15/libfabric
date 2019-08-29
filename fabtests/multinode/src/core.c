@@ -341,7 +341,6 @@ static int multinode_rma_write() {
 		tx_seq++;
 		state.sends_posted++;
 		state.tx_window--;
-		pm_barrier();
 	}
 	return 0;
 }
@@ -355,27 +354,9 @@ static int multinode_rma_recv()
 static int multinode_rma_wait() 
 {
 	int ret;
-	
 	ret = ft_get_tx_comp(tx_seq);
 	
-	if (ret)
-		return ret;
-	
-	ret = ft_get_rx_comp(rx_seq);
-	if (ret)
-		return ret;
-
-	state.rx_window = opts.window_size;
-	state.tx_window = opts.window_size;
-
-	if (state.all_recvs_posted && state.all_sends_posted)
-		state.all_completions_done = true;	
-
-	ret = send_recv_barrier();
-	if (ret)
-		return ret;
-
-	return 0;
+	return ret;
 }
 
 
@@ -448,7 +429,7 @@ int multinode_run_tests(int argc, char **argv)
 			return ret;
 		printf("Transfer Method: %s\n", method[i].name);	
 	
-		for (j = 0; j < NUM_TESTS; j++) {
+		for (j = 0; j < NUM_TESTS - 1; j++) {
 			printf("starting %s... ", patterns[j].name);
 			pattern = &patterns[j];
 			ret = multinode_run_test(method[i]);
