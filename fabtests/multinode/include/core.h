@@ -43,7 +43,7 @@
 #include "pattern.h"
 
 #define PM_DEFAULT_OOB_PORT (8228)
-#define NUM_METHODS 2
+#define NUM_METHODS 3
 
 struct pm_job_info {
 	size_t		my_rank;

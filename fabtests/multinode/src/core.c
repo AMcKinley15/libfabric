@@ -77,7 +77,7 @@ static int multinode_setup_fabric(int argc, char **argv)
 	struct fi_rma_iov *remote = malloc(sizeof(struct fi_rma_iov));
 
 	hints->ep_attr->type = FI_EP_RDM;
-	hints->caps = FI_MSG | FI_RMA;
+	hints->caps = FI_MSG | FI_RMA | FI_ATOMICS;
 	hints->mode = FI_CONTEXT;
 	hints->domain_attr->mr_mode = opts.mr_mode;
 
@@ -172,6 +172,12 @@ static int multinode_rma_setup(int argc, char** argv)
 
 static int socket_setup_fabric(int argc, char** argv)
 {
+	return multinode_setup_fabric(argc, argv);
+}
+
+static int multinode_atomic_setup(int argc, char** argv) 
+{
+	opts.options |= FT_OPT_SKIP_REG_MR;
 	return multinode_setup_fabric(argc, argv);
 }
 
@@ -359,6 +365,67 @@ static int multinode_rma_wait()
 	return ret;
 }
 
+static int multinode_atomic_send()
+{
+	int ret;
+	
+	while (!state.all_sends_posted) {
+		if (state.tx_window == 0)
+			break;
+
+		ret = pattern->next_target(&state.cur_target);
+		if (ret == -FI_ENODATA) {
+			state.all_sends_posted = true;
+			break;
+		} else if (ret < 0) {
+			return ret;
+		}
+		
+		remote_fi_addr = pm_job.fi_addrs[state.cur_target];
+		
+		ret = ft_post_atomic(FT_ATOMIC_BASE, ep, NULL, NULL, NULL, NULL, 
+							&pm_job.fi_iovs[state.cur_target], FI_INT8, FI_SUM, NULL);
+		
+		if (ret)
+			return ret;
+	
+		state.sends_posted++;
+		state.tx_window--;
+	}
+
+	return 0;
+}
+
+static int multinode_atomic_recv()
+{
+	state.all_recvs_posted = true;
+	return 0;
+}
+
+static int multinode_atomic_wait()
+{
+	int ret;
+
+	ret = ft_get_tx_comp(tx_seq);
+	if (ret)
+		return ret;
+
+	ret = ft_get_rx_comp(rx_seq);
+	if (ret)
+		return ret;
+
+	state.rx_window = opts.window_size;
+	state.tx_window = opts.window_size;
+
+	if (state.all_recvs_posted && state.all_sends_posted)
+		state.all_completions_done = true;	
+
+	ret = send_recv_barrier();
+	if (ret)
+		return ret;
+	
+	return 0;
+}
 
 static int multinode_run_test(struct multinode_xfer_method method)
 {
@@ -420,7 +487,14 @@ int multinode_run_tests(int argc, char **argv)
 			.recv = multinode_post_rx,
 			.wait = multinode_wait_for_comp,
 			.setup = socket_setup_fabric,
-		}
+		},
+		{
+			.name = "atomic",
+			.send = multinode_atomic_send,
+			.recv = multinode_atomic_recv,
+			.wait = multinode_atomic_wait,
+			.setup = multinode_atomic_setup,
+		},
 	};
 		
 	for (i = 0; i < ARRAY_SIZE(method); i++) {
