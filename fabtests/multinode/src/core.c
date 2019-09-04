@@ -178,6 +178,7 @@ static int socket_setup_fabric(int argc, char** argv)
 static int multinode_atomic_setup(int argc, char** argv) 
 {
 	opts.options |= FT_OPT_SKIP_REG_MR;
+	opts.options |= FI_WRITE | FI_READ | FI_REMOTE_READ | FI_REMOTE_WRITE;
 	return multinode_setup_fabric(argc, argv);
 }
 
@@ -300,7 +301,8 @@ int send_recv_barrier()
 	return ret;
 }
 
-static int multinode_rma_write() {
+static int multinode_rma_write() 
+{
 
 	int ret;
 	struct fi_msg_rma *message = (struct fi_msg_rma *) malloc(sizeof(struct fi_msg_rma));
@@ -368,8 +370,21 @@ static int multinode_rma_wait()
 static int multinode_atomic_send()
 {
 	int ret;
+	uint64_t src, dest;
+	struct fi_msg_atomic *message = (struct fi_msg_atomic *) malloc(sizeof(struct fi_msg_atomic));
+	struct fi_ioc *loc_iov = (struct fi_ioc *) malloc(sizeof(struct fi_ioc *));
 	
+	message->desc = mr_desc;
+	message->context = NULL;
+	message->rma_iov_count = 1;
+	message->iov_count = 1;
+	message->msg_iov = loc_iov;
+	message->data = 0;
+	message->op = FI_SUM;
+	message->datatype = FI_INT8;
+
 	while (!state.all_sends_posted) {
+
 		if (state.tx_window == 0)
 			break;
 
@@ -381,18 +396,30 @@ static int multinode_atomic_send()
 			return ret;
 		}
 		
-		remote_fi_addr = pm_job.fi_addrs[state.cur_target];
+		loc_iov->addr = (void *) (tx_buf + tx_size * state.cur_target);
+		loc_iov->count = 1;
 		
-		ret = ft_post_atomic(FT_ATOMIC_BASE, ep, NULL, NULL, NULL, NULL, 
-							&pm_job.fi_iovs[state.cur_target], FI_INT8, FI_SUM, NULL);
-		
-		if (ret)
-			return ret;
+		(*(int*) loc_iov->addr) = pm_job.my_rank;
+					
+			
+
+		message->rma_iov = (struct fi_rma_ioc *) &pm_job.fi_iovs[state.cur_target];
+		message->addr = pm_job.fi_addrs[state.cur_target];
 	
+		do {
+			
+			ret = fi_atomicmsg(ep, message, FI_DELIVERY_COMPLETE);
+
+		} while (ret == -FI_EAGAIN);
+
+		if (ret) { 
+			printf("rma post failed: %i\n", ret);
+			return ret;
+		}
+		tx_seq++;
 		state.sends_posted++;
 		state.tx_window--;
 	}
-
 	return 0;
 }
 
@@ -405,8 +432,12 @@ static int multinode_atomic_recv()
 static int multinode_atomic_wait()
 {
 	int ret;
-
+	printf(" waiting... tx_seq: %zu, tx_cq_seq: %zu", tx_seq, tx_cq_cntr);
+	fflush(stdout);
 	ret = ft_get_tx_comp(tx_seq);
+	printf(" tx_wait done.");
+	fflush(stdout);
+	
 	if (ret)
 		return ret;
 
@@ -423,6 +454,7 @@ static int multinode_atomic_wait()
 	ret = send_recv_barrier();
 	if (ret)
 		return ret;
+	//pm_barrier();
 	
 	return 0;
 }
@@ -432,6 +464,7 @@ static int multinode_run_test(struct multinode_xfer_method method)
 	int ret;
 	int iter;
 
+	opts.iterations = 10;
 	for (iter = 0; iter < opts.iterations; iter++) {
 		multinode_init_state();
 
@@ -501,9 +534,10 @@ int multinode_run_tests(int argc, char **argv)
 		ret = method[i].setup(argc, argv);
 		if (ret)
 			return ret;
+		printf("\033[0;31m");
 		printf("Transfer Method: %s\n", method[i].name);	
-	
-		for (j = 0; j < NUM_TESTS - 1; j++) {
+		printf("\033[0m");
+		for (j = 0; j < NUM_TESTS; j++) {
 			printf("starting %s... ", patterns[j].name);
 			pattern = &patterns[j];
 			ret = multinode_run_test(method[i]);
