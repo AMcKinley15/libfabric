@@ -177,8 +177,6 @@ static int socket_setup_fabric(int argc, char** argv)
 
 static int multinode_atomic_setup(int argc, char** argv) 
 {
-	opts.options |= FT_OPT_SKIP_REG_MR;
-	opts.options |= FI_WRITE | FI_READ | FI_REMOTE_READ | FI_REMOTE_WRITE;
 	return multinode_setup_fabric(argc, argv);
 }
 
@@ -361,16 +359,34 @@ static int multinode_rma_recv()
 
 static int multinode_rma_wait() 
 {
+
 	int ret;
+	
 	ret = ft_get_tx_comp(tx_seq);
 	
-	return ret;
+	if (ret)
+		return ret;
+	
+	ret = ft_get_rx_comp(rx_seq);
+	if (ret)
+		return ret;
+
+	state.rx_window = opts.window_size;
+	state.tx_window = opts.window_size;
+
+	if (state.all_recvs_posted && state.all_sends_posted)
+		state.all_completions_done = true;	
+
+	ret = send_recv_barrier();
+	if (ret)
+		return ret;
+
+	return 0;
 }
 
 static int multinode_atomic_send()
 {
 	int ret;
-	uint64_t src, dest;
 	struct fi_msg_atomic *message = (struct fi_msg_atomic *) malloc(sizeof(struct fi_msg_atomic));
 	struct fi_ioc *loc_iov = (struct fi_ioc *) malloc(sizeof(struct fi_ioc *));
 	
@@ -401,8 +417,6 @@ static int multinode_atomic_send()
 		
 		(*(int*) loc_iov->addr) = pm_job.my_rank;
 					
-			
-
 		message->rma_iov = (struct fi_rma_ioc *) &pm_job.fi_iovs[state.cur_target];
 		message->addr = pm_job.fi_addrs[state.cur_target];
 	
@@ -432,11 +446,8 @@ static int multinode_atomic_recv()
 static int multinode_atomic_wait()
 {
 	int ret;
-	printf(" waiting... tx_seq: %zu, tx_cq_seq: %zu", tx_seq, tx_cq_cntr);
-	fflush(stdout);
+
 	ret = ft_get_tx_comp(tx_seq);
-	printf(" tx_wait done.");
-	fflush(stdout);
 	
 	if (ret)
 		return ret;
@@ -454,7 +465,6 @@ static int multinode_atomic_wait()
 	ret = send_recv_barrier();
 	if (ret)
 		return ret;
-	//pm_barrier();
 	
 	return 0;
 }
@@ -464,7 +474,6 @@ static int multinode_run_test(struct multinode_xfer_method method)
 	int ret;
 	int iter;
 
-	opts.iterations = 10;
 	for (iter = 0; iter < opts.iterations; iter++) {
 		multinode_init_state();
 

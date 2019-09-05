@@ -451,7 +451,11 @@ static int ft_alloc_msgs(void)
 	}
 	memset(buf, 0, buf_size);
 	rx_buf = buf;
-	tx_buf = (char *) buf + MAX(rx_size, FT_MAX_CTRL_MSG) * opts.window_size;
+	
+	if (opts.options & FT_OPT_ALLOC_MULT_MR)
+		tx_buf = (char *) buf + MAX(rx_size, FT_MAX_CTRL_MSG); 
+	else
+		tx_buf = (char *) buf + MAX(rx_size, FT_MAX_CTRL_MSG) * opts.window_size;
 	tx_buf = (void *) (((uintptr_t) tx_buf + alignment - 1) &
 			   ~(alignment - 1));
 
