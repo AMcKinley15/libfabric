@@ -58,6 +58,7 @@ common_srcs =				\
 	prov/util/src/util_pep.c	\
 	prov/util/src/util_eq.c		\
 	prov/util/src/util_fabric.c	\
+    prov/util/src/util_map.c\
 	prov/util/src/util_main.c	\
 	prov/util/src/util_poll.c	\
 	prov/util/src/util_wait.c	\
@@ -123,6 +124,7 @@ src_libfabric_la_SOURCES =			\
 	include/ofi_atom.h			\
 	include/ofi_enosys.h			\
 	include/ofi_file.h			\
+    include/ofi_map.h      \
 	include/ofi_hook.h			\
 	include/ofi_indexer.h			\
 	include/ofi_iov.h			\
