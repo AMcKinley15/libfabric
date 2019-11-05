@@ -196,15 +196,18 @@ int ofi_rbmap_insert(struct ofi_rbmap *map, void *key, void *data,
 		     struct ofi_rbnode **ret_node)
 {
 	struct ofi_rbnode *current, *parent, *node;
-	int ret;
+	int ret = 0;
 
 	current = map->root;
 	parent = NULL;
 
 	while (current != &map->sentinel) {
 		ret = map->compare(map, key, current->data);
-		if (ret == 0)
-			return -FI_EALREADY;
+		if (ret == 0) {
+			node = current;
+			ret = -FI_EALREADY;
+			goto out;
+		}
 
 		parent = current;
 		current = (ret < 0) ? current->left : current->right;
@@ -230,9 +233,13 @@ int ofi_rbmap_insert(struct ofi_rbmap *map, void *key, void *data,
 	}
 
 	ofi_insert_rebalance(map, node);
+
+	ret = 0;
+out:
 	if (ret_node)
 		*ret_node = node;
-	return 0;
+
+	return ret;
 }
 
 static void ofi_delete_rebalance(struct ofi_rbmap *map, struct ofi_rbnode *node)
