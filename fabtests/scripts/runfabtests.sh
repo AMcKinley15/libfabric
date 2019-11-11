@@ -40,7 +40,7 @@
 #
 
 trap cleanup_and_exit SIGINT
-set -ex
+
 #
 # Default behavior with no args will use sockets provider with loopback
 #
@@ -55,7 +55,7 @@ declare GOOD_ADDR=""
 declare -i VERBOSE=0
 declare -i SKIP_NEG=0
 declare COMPLEX_CFG
-declare TIMEOUT_VAL="1200"
+declare TIMEOUT_VAL="120"
 declare STRICT_MODE=0
 declare FORK=0
 declare C_ARGS=""
@@ -200,7 +200,8 @@ complex_tests=(
 )
 
 multinode_tests=(
-	"fi_multinode"
+	"fi_multinode -c \"msg\""
+	"fi_multinode -c \"rma\""
 	"fi_multinode_coll"
 )
 
@@ -574,16 +575,16 @@ function multinode_test {
 		${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_outp & 
 		c_pid_arr+=($!)
 	done
-	
+
 	for pid in ${c_pid_arr[*]}; do
 		wait $pid
 	done
 	
+
 	[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
-	
+
 	wait $s_pid
 	s_ret=$?
-
 	
 	end_time=$(date '+%s')
 	test_time=$(compute_duration "$start_time" "$end_time")
@@ -627,7 +628,7 @@ function main {
 	set_excludes
 
 	if [[ $1 == "quick" ]]; then
-		local -r tests="multinode"
+		local -r tests="unit functional short multinode"
 	elif [[ $1 == "verify" ]]; then
 		local -r tests="complex"
 		complex_type=$1
