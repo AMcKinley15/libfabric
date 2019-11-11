@@ -276,12 +276,13 @@ int main(int argc, char **argv)
 	opts.options |= (FT_OPT_SIZE | FT_OPT_ALLOC_MULT_MR);
 
 	pm_job.clients = NULL;
+	pm_job.caps = "msg";
 
 	hints = fi_allocinfo();
 	if (!hints)
 		return EXIT_FAILURE;
 
-	while ((c = getopt(argc, argv, "n:h" CS_OPTS INFO_OPTS)) != -1) {
+	while ((c = getopt(argc, argv, "n:c:h" CS_OPTS INFO_OPTS)) != -1) {
 		switch (c) {
 		default:
 			ft_parse_addr_opts(c, optarg, &opts);
@@ -290,6 +291,9 @@ int main(int argc, char **argv)
 			break;
 		case 'n':
 			pm_job.num_ranks = atoi(optarg);
+			break;
+		case 'c':
+			pm_job.caps = optarg;
 			break;
 		case '?':
 		case 'h':

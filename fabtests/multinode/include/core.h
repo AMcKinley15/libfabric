@@ -56,6 +56,7 @@ struct pm_job_info {
 	void		*names;
 	size_t		name_len;
 	fi_addr_t	*fi_addrs;
+	char 		*caps;
 };
 
 
@@ -84,7 +85,6 @@ struct multinode_xfer_method {
 	int (*send) ();
 	int (*recv) ();
 	int (*wait) ();
-	int (*setup) (int, char**);
 };
 
 extern struct pm_job_info pm_job;
