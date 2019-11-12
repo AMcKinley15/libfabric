@@ -200,8 +200,8 @@ complex_tests=(
 )
 
 multinode_tests=(
-	"fi_multinode -c \"msg\""
-	"fi_multinode -c \"rma\""
+	"fi_multinode -c msg"
+	"fi_multinode -c rma"
 	"fi_multinode_coll"
 )
 
@@ -549,7 +549,7 @@ function complex_test {
 }
 
 function multinode_test {
-	local test=$1
+	local test="$1"
 	local s_ret=0
 	local c_ret=0
 	local num_procs=$2
@@ -557,7 +557,6 @@ function multinode_test {
 	local start_time
 	local end_time
 	local test_time
-
 
 	is_excluded "$test" && return
 
@@ -579,7 +578,6 @@ function multinode_test {
 	for pid in ${c_pid_arr[*]}; do
 		wait $pid
 	done
-	
 
 	[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
 
@@ -675,12 +673,11 @@ function main {
 		complex)
 			for test in "${complex_tests[@]}"; do
 				complex_test $test $complex_type
-
 			done
 		;;
 		multinode)
 			for test in "${multinode_tests[@]}"; do
-					multinode_test $test 3
+					multinode_test "$test" 3
 			done
 		;;
 		*)
