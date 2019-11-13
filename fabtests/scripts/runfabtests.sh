@@ -55,7 +55,7 @@ declare GOOD_ADDR=""
 declare -i VERBOSE=0
 declare -i SKIP_NEG=0
 declare COMPLEX_CFG
-declare TIMEOUT_VAL="120"
+declare TIMEOUT_VAL="10"
 declare STRICT_MODE=0
 declare FORK=0
 declare C_ARGS=""
@@ -420,12 +420,12 @@ function cs_test {
 
 	start_time=$(date '+%s')
 
-	s_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s $S_INTERFACE"
+	s_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s $S_INTERFACE"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
 	s_pid=$!
 	sleep 1
 
-	c_cmd="${BIN_PATH}${test_exe} ${C_ARGS} -s $C_INTERFACE $S_INTERFACE"
+	c_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${C_ARGS} -s $C_INTERFACE $S_INTERFACE"
 	${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_outp &
 	c_pid=$!
 
@@ -564,7 +564,7 @@ function multinode_test {
 
 	start_time=$(date '+%s')
 
-	s_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
+	s_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
 	s_pid=$!
 	sleep 1
@@ -573,7 +573,7 @@ function multinode_test {
 	for ((i=1; i<num_procs; i++))
 	do
 		local c_out=$(mktemp fabtests.c_outp${i}.XXXXXX)
-		c_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
+		c_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 		${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_out & 
 		c_pid_arr+=($!)
 		c_out_arr+=($c_out)
@@ -594,7 +594,7 @@ function multinode_test {
 
 	if [[ $STRICT_MODE -eq 0 && $s_ret -eq $FI_ENODATA && $c_ret -eq $FI_ENODATA ]] ||
 	   [[ $STRICT_MODE -eq 0 && $s_ret -eq $FI_ENOSYS && $c_ret -eq $FI_ENOSYS ]]; then
-		print_results "$test_exe" "Notrun" "$test_time" "$s_outp" "$s_cmd" "${c_out_arr[0]}" "$c_cmd"
+		print_results "$test_exe" "Notrun" "$test_time" "$s_outp" "$s_cmd" "" "$c_cmd"
 		for c_out in "${c_out_arr[@]:1}" 
 		do
 			printf -- "  client_stdout $i: |\n"
@@ -602,7 +602,7 @@ function multinode_test {
 		done
 		skip_count+=1
 	elif [ $s_ret -ne 0 -o $c_ret -ne 0 ]; then
-		print_results "$test_exe" "Fail" "$test_time" "$s_outp" "$s_cmd" "${c_out_arr[0]}" "$c_cmd"
+		print_results "$test_exe" "Fail" "$test_time" "$s_outp" "$s_cmd" "" "$c_cmd"
 		for c_out in "${c_out_arr[@]:1}" 
 		do
 			printf -- "  client_stdout $i: |\n"
@@ -613,11 +613,13 @@ function multinode_test {
 		fi
 		fail_count+=1
 	else
-		print_results "$test_exe" "Pass" "$test_time" "$s_outp" "$s_cmd" "${c_out_arr[0]}" "$c_cmd"
-		for c_out in "${c_out_arr[@]:1}" 
+		local pe=1
+		print_results "$test_exe" "Pass" "$test_time" "$s_outp" "$s_cmd" "" "$c_cmd"
+		for c_out in "${c_out_arr[@]}" 
 		do
-			printf -- "  client_stdout $i: |\n"
+			printf -- "  client_stdout $pe: |\n"
 			sed -e 's/^/    /' < $c_out
+			pe+=1 
 		done
 		pass_count+=1
 	fi
@@ -646,7 +648,7 @@ function main {
 	set_excludes
 
 	if [[ $1 == "quick" ]]; then
-		local -r tests="unit functional short multinode"
+		local -r tests="multinode"
 	elif [[ $1 == "verify" ]]; then
 		local -r tests="complex"
 		complex_type=$1
