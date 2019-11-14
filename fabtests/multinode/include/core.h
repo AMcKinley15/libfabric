@@ -94,10 +94,3 @@ int multinode_run_tests(int argc, char **argv);
 int pm_allgather(void *my_item, void *items, int item_size);
 void pm_barrier();
 
-static void debug_print(char* message) 
-{
-	if (MULT_DEBUG) {
-		printf("%zu: %s", pm_job.my_rank, message);
-		fflush(stdout);
-	}
-}

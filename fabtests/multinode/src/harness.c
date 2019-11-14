@@ -267,6 +267,13 @@ int pm_get_oob_server_addr()
 	return ret;
 }
 
+static void debug_print(char* message) 
+{
+	if (MULT_DEBUG) {
+		printf("%zu: %s", pm_job.my_rank, message);
+		fflush(stdout);
+	}
+}
 int main(int argc, char **argv)
 {
 	extern char *optarg;
