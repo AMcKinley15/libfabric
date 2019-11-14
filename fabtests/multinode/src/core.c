@@ -477,7 +477,7 @@ int multinode_run_tests(int argc, char **argv)
 	pm_job_free_res();
 	ft_free_res();
 	
-	print_debug("end of the world", 0);
+	debug_print("end of the world", 0);
 	fflush(stdout);
 
 	return ft_exit_code(ret);
