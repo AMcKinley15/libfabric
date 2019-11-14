@@ -587,7 +587,7 @@ function multinode_test {
 		echo "Client finished"
 	done
 	
-	[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
+	#[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
 
 	wait $s_pid
 	s_ret=$?
