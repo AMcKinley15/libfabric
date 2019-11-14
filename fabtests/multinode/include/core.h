@@ -33,6 +33,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 #include <rdma/fabric.h>
@@ -43,6 +44,7 @@
 #include "pattern.h"
 
 #define PM_DEFAULT_OOB_PORT (8228)
+#define MULT_DEBUG true
 
 struct pm_job_info {
 	size_t		my_rank;
@@ -91,3 +93,11 @@ extern struct pm_job_info pm_job;
 int multinode_run_tests(int argc, char **argv);
 int pm_allgather(void *my_item, void *items, int item_size);
 void pm_barrier();
+
+static void debug_print(char* message) 
+{
+	if (MULT_DEBUG) {
+		printf("%zu: %s", pm_job.my_rank, message);
+		fflush(stdout);
+	}
+}

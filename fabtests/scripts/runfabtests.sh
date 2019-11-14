@@ -200,8 +200,8 @@ complex_tests=(
 )
 
 multinode_tests=(
-	"fi_multinode -c msg"
-	"fi_multinode -c rma"
+	"fi_multinode -C msg"
+	"fi_multinode -C rma"
 	"fi_multinode_coll"
 )
 
@@ -563,9 +563,10 @@ function multinode_test {
 	is_excluded "$test" && return
 
 	start_time=$(date '+%s')
-
+	
 	s_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
+	echo "Server Started"
 	s_pid=$!
 	sleep 1
 	
@@ -577,43 +578,48 @@ function multinode_test {
 		${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_out & 
 		c_pid_arr+=($!)
 		c_out_arr+=($c_out)
+		echo "Client $i started"
 	done
 
 	for pid in ${c_pid_arr[*]}; do
 		wait $pid
 		c_ret=($?)||$c_ret
+		echo "Client finished"
 	done
 	
 	[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
 
 	wait $s_pid
 	s_ret=$?
+	echo "server finished"
 	
 	end_time=$(date '+%s')
 	test_time=$(compute_duration "$start_time" "$end_time")
-
+	
+	local pe=1
 	if [[ $STRICT_MODE -eq 0 && $s_ret -eq $FI_ENODATA && $c_ret -eq $FI_ENODATA ]] ||
 	   [[ $STRICT_MODE -eq 0 && $s_ret -eq $FI_ENOSYS && $c_ret -eq $FI_ENOSYS ]]; then
 		print_results "$test_exe" "Notrun" "$test_time" "$s_outp" "$s_cmd" "" "$c_cmd"
-		for c_out in "${c_out_arr[@]:1}" 
+		for c_out in "${c_out_arr[@]}" 
 		do
-			printf -- "  client_stdout $i: |\n"
+			printf -- "  client_stdout $pe: |\n"
 			sed -e 's/^/    /' < $c_out
+			pe+=1
 		done
 		skip_count+=1
 	elif [ $s_ret -ne 0 -o $c_ret -ne 0 ]; then
 		print_results "$test_exe" "Fail" "$test_time" "$s_outp" "$s_cmd" "" "$c_cmd"
-		for c_out in "${c_out_arr[@]:1}" 
+		for c_out in "${c_out_arr[@]}" 
 		do
-			printf -- "  client_stdout $i: |\n"
+			printf -- "  client_stdout $pe: |\n"
 			sed -e 's/^/    /' < $c_out
+			pe+=1
 		done
 		if [ $s_ret -eq 124 -o $c_ret -eq 124 ]; then
 			cleanup
 		fi
 		fail_count+=1
 	else
-		local pe=1
 		print_results "$test_exe" "Pass" "$test_time" "$s_outp" "$s_cmd" "" "$c_cmd"
 		for c_out in "${c_out_arr[@]}" 
 		do

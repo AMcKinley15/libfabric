@@ -450,6 +450,7 @@ int multinode_run_tests(int argc, char **argv)
 
 	for (i = 0; i < NUM_TESTS; i++) {
 		printf("starting %s... ", patterns[i].name);
+		fflush(stdout);
 		pattern = &patterns[i];
 		ret = multinode_run_test();
 		if (ret) {
@@ -461,6 +462,7 @@ int multinode_run_tests(int argc, char **argv)
 		ret = send_recv_barrier();
 		if (ret)
 			return ret;
+		fflush(stdout);
 	}
 
 	printf("\nAll tests passed!\n");		

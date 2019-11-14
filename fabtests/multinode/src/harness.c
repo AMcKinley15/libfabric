@@ -272,6 +272,8 @@ int main(int argc, char **argv)
 	extern char *optarg;
 	int c, ret;
 
+	debug_print("test started!");	
+
 	opts = INIT_OPTS;
 	opts.options |= (FT_OPT_SIZE | FT_OPT_ALLOC_MULT_MR);
 
@@ -282,7 +284,7 @@ int main(int argc, char **argv)
 	if (!hints)
 		return EXIT_FAILURE;
 
-	while ((c = getopt(argc, argv, "n:c:h" CS_OPTS INFO_OPTS)) != -1) {
+	while ((c = getopt(argc, argv, "n:C:h" CS_OPTS INFO_OPTS)) != -1) {
 		switch (c) {
 		default:
 			ft_parse_addr_opts(c, optarg, &opts);
@@ -292,7 +294,7 @@ int main(int argc, char **argv)
 		case 'n':
 			pm_job.num_ranks = atoi(optarg);
 			break;
-		case 'c':
+		case 'C':
 			pm_job.caps = optarg;
 			break;
 		case '?':
