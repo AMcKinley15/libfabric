@@ -270,11 +270,11 @@ static int multinode_wait_for_comp()
 	ret = ft_get_tx_comp(tx_seq);
 	if (ret)
 		return ret;
-
+	debug_print("\t\tsends done\n", tx_seq);			
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
-
+	debug_print("\t\trecvs done\n", tx_seq);
 	for (i = 0; i < opts.window_size; i++) {
 		rx_ctx_arr[i].state = OP_DONE;
 		tx_ctx_arr[i].state = OP_DONE;
@@ -370,15 +370,16 @@ static int multinode_rma_recv()
 static int multinode_rma_wait() 
 {
 	int ret;
-	
+		
 	ret = ft_get_tx_comp(tx_seq);	
 	if (ret)
 		return ret;
-	
+	debug_print("\t\t sends done\n", tx_seq);
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
-
+	debug_print("\t\t recv done\n", tx_seq);
+	
 	state.rx_window = opts.window_size;
 	state.tx_window = opts.window_size;
 
@@ -388,6 +389,7 @@ static int multinode_rma_wait()
 	ret = send_recv_barrier();
 	if (ret)
 		return ret;
+	debug_print("\t\t wait done\n", tx_seq);
 	
 	return 0;
 }
@@ -408,14 +410,15 @@ static int multinode_run_test()
 			ret = method.send();
 			if (ret)
 				return ret;
-			
+			debug_print("\tsends done\n", iter);		
 			ret = method.recv();
 			if (ret)
 				return ret;
-
+			debug_print("\trecvs done\n", iter);	
 			ret = method.wait();
 			if (ret)
 				return ret;
+			debug_print("\twait done\n", iter);	
 		}
 	}
 	return 0;
