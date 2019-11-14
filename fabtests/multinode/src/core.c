@@ -477,5 +477,7 @@ int multinode_run_tests(int argc, char **argv)
 	pm_job_free_res();
 	ft_free_res();
 
+	fflush(stdout);
+
 	return ft_exit_code(ret);
 }
