@@ -296,16 +296,18 @@ int send_recv_barrier()
 	multinode_init_state();
 	pattern = &patterns[1];
 	
+	debug_print("send_recv_barrier sends", 0);
 	ret = multinode_post_tx();
 	if (ret)
 		return ret;
-
+	debug_print("send_recv_barrier recvs", 1);
+	
 	ret = multinode_post_rx();
 	if (ret)
 		return ret;
 
 	ret = multinode_wait_for_comp();
-
+	debug_print("send_recv_barrier wait done", 2);
 	return ret;
 }
 
