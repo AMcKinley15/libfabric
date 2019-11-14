@@ -393,10 +393,11 @@ static int multinode_run_test()
 
 	for (iter = 0; iter < opts.iterations; iter++) {
 		multinode_init_state();
+		debug_print("th iteration\n", iter);
 		while (!state.all_completions_done ||
 				!state.all_recvs_posted ||
 				!state.all_sends_posted) {
-			
+		
 			ret = method.send();
 			if (ret)
 				return ret;
@@ -420,6 +421,13 @@ static void pm_job_free_res()
 	free(pm_job.fi_addrs);
 	
 	free(pm_job.fi_iovs);
+}
+static void debug_print(char* message, int i) 
+{
+	if (MULT_DEBUG) {
+		printf("%zu: %i: %s", pm_job.my_rank, message);
+		fflush(stdout);
+	}
 }
 
 int multinode_run_tests(int argc, char **argv)
