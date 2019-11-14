@@ -70,6 +70,13 @@ static inline void multinode_init_state()
 	state.tx_window = opts.window_size;
 }
 
+static void debug_print(char* message, int i) 
+{
+	if (MULT_DEBUG) {
+		printf("%zu: %i: %s", pm_job.my_rank,i ,message);
+		fflush(stdout);
+	}
+}
 static int multinode_setup_fabric(int argc, char **argv, struct multinode_xfer_method methods[])
 {
 	char my_name[FT_MAX_CTRL_MSG];
@@ -421,13 +428,6 @@ static void pm_job_free_res()
 	free(pm_job.fi_addrs);
 	
 	free(pm_job.fi_iovs);
-}
-static void debug_print(char* message, int i) 
-{
-	if (MULT_DEBUG) {
-		printf("%zu: %i: %s", pm_job.my_rank, message);
-		fflush(stdout);
-	}
 }
 
 int multinode_run_tests(int argc, char **argv)
