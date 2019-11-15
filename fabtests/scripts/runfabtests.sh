@@ -652,6 +652,8 @@ function main {
 
 	set_core_util
 	set_excludes
+	
+	export FI_LOG_LEVEL=debug
 
 	if [[ $1 == "quick" ]]; then
 		local -r tests="multinode"
