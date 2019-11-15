@@ -168,6 +168,7 @@ static int server_connect()
 		}
 		pm_job.clients[i] = new_sock;
 		FT_DEBUG("connection established\n");
+		printf("connection established to client %i\n", i);
 	}
 	close(pm_job.sock);
 	return 0;
@@ -208,6 +209,7 @@ static int pm_conn_setup()
 		opts.src_port = 0;
 		ret = connect(pm_job.sock, (struct sockaddr *)&pm_job.oob_server_addr,
 			      pm_job.server_addr_len);
+		printf("Client Connected!\n");
 	}
 	if (ret) {
 		FT_ERR("OOB conn failed - %s\n", strerror(errno));
