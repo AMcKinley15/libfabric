@@ -707,7 +707,7 @@ function main {
 		;;
 		multinode)
 			for test in "${multinode_tests[@]}"; do
-					multinode_test "$test" 3
+					multinode_test "$test" 2
 			done
 		;;
 		*)
