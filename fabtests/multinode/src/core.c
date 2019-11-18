@@ -270,7 +270,6 @@ static int multinode_wait_for_comp()
 	ret = ft_get_tx_comp(tx_seq);
 	if (ret)
 		return ret;
-	//debug_print("\t\tsends done\n", tx_seq);			
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
@@ -280,7 +279,6 @@ static int multinode_wait_for_comp()
 			     rx_ctx_arr[0].buf,
 			     rx_ctx_arr[0].desc, 0);
 		
-	//debug_print("\t\trecvs done\n", tx_seq);
 	for (i = 0; i < opts.window_size; i++) {
 		rx_ctx_arr[i].state = OP_DONE;
 		tx_ctx_arr[i].state = OP_DONE;
@@ -304,10 +302,13 @@ int send_recv_barrier()
 			    tx_ctx_arr[0].buf,
 			    tx_ctx_arr[0].desc, 0);
 	
-	debug_print("send_recv_barrier sends", 0);
 	if (ret)
 		return ret;
-	debug_print("send_recv_barrier recvs", 1);
+	
+	ret = ft_post_rx_buf(ep, opts.transfer_size,
+			     &rx_ctx_arr[0].context,
+			     rx_ctx_arr[0].buf,
+			     rx_ctx_arr[0].desc, 0);
 	
 	if (ret)
 		return ret;
