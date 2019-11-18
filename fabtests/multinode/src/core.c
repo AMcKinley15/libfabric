@@ -274,6 +274,12 @@ static int multinode_wait_for_comp()
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
+
+	ret = ft_post_rx_buf(ep, opts.transfer_size,
+			     &rx_ctx_arr[0].context,
+			     rx_ctx_arr[0].buf,
+			     rx_ctx_arr[0].desc, 0);
+		
 	//debug_print("\t\trecvs done\n", tx_seq);
 	for (i = 0; i < opts.window_size; i++) {
 		rx_ctx_arr[i].state = OP_DONE;
@@ -292,21 +298,27 @@ static int multinode_wait_for_comp()
 int send_recv_barrier() 
 {
 	int ret;
-
-	multinode_init_state();
-	pattern = &patterns[1];
+	ret = ft_post_tx_buf(ep, pm_job.fi_addrs[(pm_job.my_rank + 1) % pm_job.num_ranks], 
+				opts.transfer_size, NO_CQ_DATA,
+			    &tx_ctx_arr[0].context,
+			    tx_ctx_arr[0].buf,
+			    tx_ctx_arr[0].desc, 0);
 	
 	debug_print("send_recv_barrier sends", 0);
-	ret = multinode_post_tx();
 	if (ret)
 		return ret;
 	debug_print("send_recv_barrier recvs", 1);
 	
-	ret = multinode_post_rx();
 	if (ret)
 		return ret;
 
-	ret = multinode_wait_for_comp();
+	ret = ft_get_tx_comp(tx_seq);
+	if (ret)
+		return ret;
+	ret = ft_get_rx_comp(rx_seq);
+	if (ret)
+		return ret;
+	
 	debug_print("send_recv_barrier wait done", 2);
 	return ret;
 }
