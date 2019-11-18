@@ -388,11 +388,6 @@ static int multinode_rma_wait()
 	if (state.all_recvs_posted && state.all_sends_posted)
 		state.all_completions_done = true;	
 	
-	ret = send_recv_barrier();
-	if (ret)
-		return ret;
-	//debug_print("\t\t wait done\n", tx_seq);
-	
 	return 0;
 }
 
@@ -422,6 +417,9 @@ static int multinode_run_test()
 				return ret;
 			//debug_print("\twait done\n", iter);	
 		}
+		ret = send_recv_barrier();
+		if (ret)
+			return ret;
 	}
 	return 0;
 }
@@ -472,9 +470,6 @@ int multinode_run_tests(int argc, char **argv)
 		} else {
 			printf("passed\n");
 		}
-		ret = send_recv_barrier();
-		if (ret)
-			return ret;
 		fflush(stdout);
 	}
 
