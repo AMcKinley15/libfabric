@@ -200,7 +200,8 @@ complex_tests=(
 )
 
 multinode_tests=(
-	"fi_multinode"
+	"fi_multinode -C msg"
+	"fi_multinode -C rma"
 	"fi_multinode_coll"
 )
 
@@ -679,7 +680,7 @@ function main {
 		;;
 		multinode)
 			for test in "${multinode_tests[@]}"; do
-					multinode_test $test 3
+					multinode_test "$test" 3
 			done
 		;;
 		*)
