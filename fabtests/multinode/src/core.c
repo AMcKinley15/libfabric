@@ -270,7 +270,7 @@ static int multinode_wait_for_comp()
 	ret = ft_get_tx_comp(tx_seq);
 	if (ret)
 		return ret;
-	printf("wait counter: %i\n", multi_rx_counter);
+	//printf("wait counter: %i\n", multi_rx_counter);
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
@@ -427,7 +427,8 @@ static int multinode_run_test()
 			if (ret)
 				return ret;
 			//debug_print("\twait done\n", iter);	
-			ret = send_recv_barrier();
+		//	ret = send_recv_barrier();
+			pm_barrier();
 			if (ret)
 				return ret;
 		}
