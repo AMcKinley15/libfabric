@@ -627,7 +627,7 @@ function main {
 	set_excludes
 
 	if [[ $1 == "quick" ]]; then
-		local -r tests="unit functional short multinode"
+		local -r tests="multinode"
 	elif [[ $1 == "verify" ]]; then
 		local -r tests="complex"
 		complex_type=$1
