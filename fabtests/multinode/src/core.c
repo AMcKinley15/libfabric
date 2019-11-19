@@ -427,10 +427,10 @@ static int multinode_run_test()
 			if (ret)
 				return ret;
 			//debug_print("\twait done\n", iter);	
+			ret = send_recv_barrier();
+			if (ret)
+				return ret;
 		}
-		ret = send_recv_barrier();
-		if (ret)
-			return ret;
 	}
 	return 0;
 }
