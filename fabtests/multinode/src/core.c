@@ -270,15 +270,11 @@ static int multinode_wait_for_comp()
 	ret = ft_get_tx_comp(tx_seq);
 	if (ret)
 		return ret;
+	printf("wait counter: %i\n", multi_rx_counter);
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
 
-	ret = ft_post_rx_buf(ep, opts.transfer_size,
-			     &rx_ctx_arr[0].context,
-			     rx_ctx_arr[0].buf,
-			     rx_ctx_arr[0].desc, 0);
-		
 	for (i = 0; i < opts.window_size; i++) {
 		rx_ctx_arr[i].state = OP_DONE;
 		tx_ctx_arr[i].state = OP_DONE;
@@ -316,6 +312,7 @@ int send_recv_barrier()
 	ret = ft_get_tx_comp(tx_seq);
 	if (ret)
 		return ret;
+
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
@@ -389,6 +386,7 @@ static int multinode_rma_wait()
 	ret = ft_get_tx_comp(tx_seq);	
 	if (ret)
 		return ret;
+
 	//debug_print("\t\t sends done\n", tx_seq);
 	ret = ft_get_rx_comp(rx_seq);
 	if (ret)

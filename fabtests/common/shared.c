@@ -94,6 +94,7 @@ struct timespec start, end;
 int listen_sock = -1;
 int sock = -1;
 int oob_sock = -1;
+int multi_rx_counter = 0;
 
 struct fi_av_attr av_attr = {
 	.type = FI_AV_MAP,
@@ -1991,6 +1992,7 @@ ssize_t ft_post_rx_buf(struct fid_ep *ep, size_t size, void *ctx,
 		FT_POST(fi_recv, ft_progress, rxcq, rx_seq, &rx_cq_cntr,
 			"receive", ep, op_buf, size, op_mr_desc, 0, ctx);
 	}
+	multi_rx_counter++;
 	return 0;
 }
 
@@ -2230,6 +2232,8 @@ static int ft_get_cntr_comp(struct fid_cntr *cntr, uint64_t total, int timeout)
 int ft_get_rx_comp(uint64_t total)
 {
 	int ret = FI_SUCCESS;
+	int old_seq = rx_cq_cntr;
+
 
 	if (opts.options & FT_OPT_RX_CQ) {
 		ret = ft_get_cq_comp(rxcq, &rx_cq_cntr, total, timeout);
@@ -2239,6 +2243,7 @@ int ft_get_rx_comp(uint64_t total)
 		FT_ERR("Trying to get a RX completion when no RX CQ or counter were opened");
 		ret = -FI_EOTHER;
 	}
+	multi_rx_counter-= (rx_cq_cntr - old_seq);
 	return ret;
 }
 
