@@ -411,7 +411,7 @@ static int multinode_run_test(struct multinode_xfer_method methods)
 			if (ret)
 				return ret;
 
-			send_recv_barrier();
+			//send_recv_barrier();
 		}
 	}
 	return 0;
