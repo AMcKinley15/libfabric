@@ -55,7 +55,7 @@ declare GOOD_ADDR=""
 declare -i VERBOSE=0
 declare -i SKIP_NEG=0
 declare COMPLEX_CFG
-declare TIMEOUT_VAL="120"
+declare TIMEOUT_VAL="10"
 declare STRICT_MODE=0
 declare FORK=0
 declare C_ARGS=""
@@ -420,12 +420,12 @@ function cs_test {
 
 	start_time=$(date '+%s')
 
-	s_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s $S_INTERFACE"
+	s_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s $S_INTERFACE"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
 	s_pid=$!
 	sleep 1
 
-	c_cmd="${BIN_PATH}${test_exe} ${C_ARGS} -s $C_INTERFACE $S_INTERFACE"
+	c_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${C_ARGS} -s $C_INTERFACE $S_INTERFACE"
 	${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_outp &
 	c_pid=$!
 
@@ -564,7 +564,7 @@ function multinode_test {
 
 	start_time=$(date '+%s')
 	
-	s_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
+	s_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
 	echo "Server Started"
 	s_pid=$!
@@ -574,21 +574,24 @@ function multinode_test {
 	for ((i=1; i<num_procs; i++))
 	do
 		local c_out=$(mktemp fabtests.c_outp${i}.XXXXXX)
-		c_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
+		c_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 		${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_out & 
 		c_pid_arr+=($!)
 		c_out_arr+=($c_out)
+		echo "Client $i started"
 	done
 
 	for pid in ${c_pid_arr[*]}; do
 		wait $pid
 		c_ret=($?)||$c_ret
+		echo "Client finished"
 	done
 	
-	[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
+	#[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
 
 	wait $s_pid
 	s_ret=$?
+	echo "server finished"
 	
 	end_time=$(date '+%s')
 	test_time=$(compute_duration "$start_time" "$end_time")
@@ -649,6 +652,8 @@ function main {
 
 	set_core_util
 	set_excludes
+	
+	export FI_LOG_LEVEL=debug
 
 	if [[ $1 == "quick" ]]; then
 		local -r tests="multinode"
@@ -698,12 +703,11 @@ function main {
 		complex)
 			for test in "${complex_tests[@]}"; do
 				complex_test $test $complex_type
-
 			done
 		;;
 		multinode)
 			for test in "${multinode_tests[@]}"; do
-					multinode_test "$test" 3
+					multinode_test "$test" 2
 			done
 		;;
 		*)
