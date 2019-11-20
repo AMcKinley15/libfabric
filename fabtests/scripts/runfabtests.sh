@@ -564,7 +564,7 @@ function multinode_test {
 
 	start_time=$(date '+%s')
 	
-	s_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
+	s_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
 	echo "Server Started"
 	s_pid=$!
@@ -574,7 +574,7 @@ function multinode_test {
 	for ((i=1; i<num_procs; i++))
 	do
 		local c_out=$(mktemp fabtests.c_outp${i}.XXXXXX)
-		c_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
+		c_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 		${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_out & 
 		c_pid_arr+=($!)
 		c_out_arr+=($c_out)
@@ -653,7 +653,6 @@ function main {
 	set_core_util
 	set_excludes
 	
-	export FI_LOG_LEVEL=debug
 
 	if [[ $1 == "quick" ]]; then
 		local -r tests="multinode"
