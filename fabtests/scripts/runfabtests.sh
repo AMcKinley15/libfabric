@@ -55,7 +55,7 @@ declare GOOD_ADDR=""
 declare -i VERBOSE=0
 declare -i SKIP_NEG=0
 declare COMPLEX_CFG
-declare TIMEOUT_VAL="10"
+declare TIMEOUT_VAL="120"
 declare STRICT_MODE=0
 declare FORK=0
 declare C_ARGS=""
