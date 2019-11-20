@@ -70,7 +70,7 @@ static int multinode_setup_fabric(int argc, char **argv,
 		method = methods[0];
 	} else if (strcmp(pm_job.caps, "rma") == 0) {
 		hints->caps = FI_MSG | FI_RMA;
-		opts.options &= (~FT_OPT_ALLOC_MULT_MR);
+		//opts.options &= (~FT_OPT_ALLOC_MULT_MR);
 		method = methods[1];
 	} else {
 		printf("Not a valid cabability: %s", pm_job.caps);
@@ -78,7 +78,6 @@ static int multinode_setup_fabric(int argc, char **argv,
 	}
 
 	hints->ep_attr->type = FI_EP_RDM;
-	hints->caps = FI_MSG;
 	hints->mode = FI_CONTEXT;
 	hints->domain_attr->mr_mode = opts.mr_mode & ~FI_MR_VIRT_ADDR;
 
@@ -364,10 +363,6 @@ static int multinode_rma_wait()
 	int ret;
 
 	ret = ft_get_tx_comp(tx_seq);	
-	if (ret)
-		return ret;
-
-	ret = ft_get_rx_comp(rx_seq);
 	if (ret)
 		return ret;
 
