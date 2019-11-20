@@ -70,13 +70,12 @@ static int multinode_setup_fabric(int argc, char **argv,
 		method = methods[0];
 	} else if (strcmp(pm_job.caps, "rma") == 0) {
 		hints->caps = FI_MSG | FI_RMA;
+		opts.options &= (~FT_OPT_ALLOC_MULT_MR);
 		method = methods[1];
 	} else {
 		printf("Not a valid cabability: %s", pm_job.caps);
 		return -FI_ENODATA;
 	}
-
-	//opts.options &= (~FT_OPT_ALLOC_MULT_MR);
 
 	hints->ep_attr->type = FI_EP_RDM;
 	hints->caps = FI_MSG;
