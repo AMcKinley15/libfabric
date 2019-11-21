@@ -465,6 +465,10 @@ int multinode_run_tests(int argc, char **argv)
 		}
 		fflush(stdout);
 	}
+	
+	ret = send_recv_barrier();
+	if (ret)
+		return ret;	
 
 	printf("\nAll tests passed!\n");		
 	pm_job_free_res();
