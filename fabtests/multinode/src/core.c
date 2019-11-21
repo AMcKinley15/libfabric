@@ -56,9 +56,22 @@
 struct pattern_ops *pattern;
 struct multinode_xfer_state state;
 struct multinode_xfer_method method;
+struct multinode_xfer_method multi_xfer_methods[] = {
+	{
+		.name = "send/recv",
+		.send = multinode_post_tx,
+		.recv = multinode_post_rx,
+		.wait = multinode_wait_for_comp,
+	},
+	{
+		.name = "rma",
+		.send = multinode_rma_write,
+		.recv = multinode_rma_recv,
+		.wait = multinode_rma_wait,
+	}
+};
 
-static int multinode_setup_fabric(int argc, char **argv, 
-			struct multinode_xfer_method methods[])
+static int multinode_setup_fabric(int argc, char **argv)
 {
 	char my_name[FT_MAX_CTRL_MSG];
 	size_t len;
@@ -67,11 +80,10 @@ static int multinode_setup_fabric(int argc, char **argv,
 
 	if (strcmp(pm_job.caps, "msg") == 0) {
 		hints->caps = FI_MSG;
-		method = methods[0];
+		method = multi_xfer_methods[0];
 	} else if (strcmp(pm_job.caps, "rma") == 0) {
 		hints->caps = FI_MSG | FI_RMA;
-		//opts.options &= (~FT_OPT_ALLOC_MULT_MR);
-		method = methods[1];
+		method = multi_xfer_methods[1];
 	} else {
 		printf("Not a valid cabability: %s", pm_job.caps);
 		return -FI_ENODATA;
@@ -151,26 +163,26 @@ static int multinode_setup_fabric(int argc, char **argv,
 		goto err;
 	}
 
-	remote->addr = 0; 	
-	remote->key = fi_mr_key(mr);	
+	remote->addr = 0; 
+	remote->key = fi_mr_key(mr);
 	remote->len = rx_size;
 
 	ret = pm_allgather(remote, pm_job.fi_iovs, sizeof(*remote));
-	if (ret) {	
+	if (ret) {
 		FT_ERR("error exchanging rma_iovs\n");
 		goto err;
 	}
 	for (i = 0; i < pm_job.num_ranks; i++) {
 		pm_job.fi_iovs[i].addr = (tx_size * pm_job.my_rank);
 	}
-	
+
 	return 0;
 err:
 	ft_free_res();
 	return ft_exit_code(ret);
 }
 
-static int multinode_post_rx()
+int multinode_post_rx()
 {
 	int ret, offset;
 
@@ -205,7 +217,7 @@ static int multinode_post_rx()
 	return 0;
 }
 
-static int multinode_post_tx()
+int multinode_post_tx()
 {
 	int ret, offset;
 	fi_addr_t dest;
@@ -243,7 +255,7 @@ static int multinode_post_tx()
 	return 0;
 }
 
-static int multinode_wait_for_comp()
+int multinode_wait_for_comp()
 {
 	int ret, i;
 
@@ -271,8 +283,8 @@ static int multinode_wait_for_comp()
 
 int send_recv_barrier()
 {
-	int ret;		
-	ret = ft_post_tx_buf(ep, pm_job.fi_addrs[(pm_job.my_rank + 1) % pm_job.num_ranks], 
+	int ret;
+	ret = ft_post_tx_buf(ep, pm_job.fi_addrs[(pm_job.my_rank + 1) % pm_job.num_ranks],
 				opts.transfer_size, NO_CQ_DATA,
 			    &tx_ctx_arr[0].context,
 			    tx_ctx_arr[0].buf,
@@ -288,7 +300,7 @@ int send_recv_barrier()
 
 	if (ret)
 		return ret;
-	
+
 	ret = ft_get_tx_comp(tx_seq);
 	if (ret)
 		return ret;
@@ -300,7 +312,7 @@ int send_recv_barrier()
 	return ret;
 }
 
-static int multinode_rma_write() 
+int multinode_rma_write()
 {
 	int ret;
 	struct fi_msg_rma *message = (struct fi_msg_rma *) malloc(sizeof(struct fi_msg_rma));
@@ -330,7 +342,7 @@ static int multinode_rma_write()
 		loc_iov->iov_len = tx_size;
 
 		snprintf((char*) loc_iov->iov_base, tx_size,
-				"Hello World! from %zu to %i on the %zuth iteration, %s test", 
+				"Hello World! from %zu to %i on the %zuth iteration, %s test",
 				pm_job.my_rank, state.cur_target, (size_t) tx_seq, pattern->name);
 
 		message->rma_iov = &pm_job.fi_iovs[state.cur_target];
@@ -341,7 +353,7 @@ static int multinode_rma_write()
 			ret = fi_writemsg(ep, message, FI_DELIVERY_COMPLETE);
 		} while (ret == -FI_EAGAIN);
 
-		if (ret) { 
+		if (ret) {
 			printf("rma post failed: %i\n", ret);
 			return ret;
 		}
@@ -352,17 +364,17 @@ static int multinode_rma_write()
 	return 0;
 }
 
-static int multinode_rma_recv() 
+int multinode_rma_recv()
 {
 	state.all_recvs_posted = true;
 	return 0;
 }
 
-static int multinode_rma_wait() 
+int multinode_rma_wait()
 {
 	int ret;
 
-	ret = ft_get_tx_comp(tx_seq);	
+	ret = ft_get_tx_comp(tx_seq);
 	if (ret)
 		return ret;
 
@@ -370,7 +382,7 @@ static int multinode_rma_wait()
 	state.tx_window = opts.window_size;
 
 	if (state.all_recvs_posted && state.all_sends_posted)
-		state.all_completions_done = true;	
+		state.all_completions_done = true;
 
 	return 0;
 }
@@ -410,8 +422,6 @@ static int multinode_run_test(struct multinode_xfer_method methods)
 			ret = method.wait();
 			if (ret)
 				return ret;
-
-			//send_recv_barrier();
 		}
 	}
 	return 0;
@@ -430,27 +440,11 @@ int multinode_run_tests(int argc, char **argv)
 	int ret = FI_SUCCESS;
 	int i;
 
-	struct multinode_xfer_method methods[] = {
-		{
-			.name = "send/recv",
-			.send = multinode_post_tx,
-			.recv = multinode_post_rx,
-			.wait = multinode_wait_for_comp,
-		},
-		{
-			.name = "rma",
-			.send = multinode_rma_write,
-			.recv = multinode_rma_recv,
-			.wait = multinode_rma_wait,
-		}
-	};
-		
-		
-	ret = multinode_setup_fabric(argc, argv, methods);
+	ret = multinode_setup_fabric(argc, argv);
 	if (ret)
 		return ret;
 
-	printf("Transfer Method: %s\n", method.name);	
+	printf("Transfer Method: %s\n", method.name);
 
 	for (i = 0; i < NUM_TESTS; i++) {
 		printf("starting %s... ", patterns[i].name);
@@ -465,12 +459,12 @@ int multinode_run_tests(int argc, char **argv)
 		}
 		fflush(stdout);
 	}
-	
+
 	ret = send_recv_barrier();
 	if (ret)
-		return ret;	
+		return ret;
 
-	printf("\nAll tests passed!\n");		
+	printf("\nAll tests passed!\n");
 	pm_job_free_res();
 	ft_free_res();
 

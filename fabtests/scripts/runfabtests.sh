@@ -55,7 +55,7 @@ declare GOOD_ADDR=""
 declare -i VERBOSE=0
 declare -i SKIP_NEG=0
 declare COMPLEX_CFG
-declare TIMEOUT_VAL="180"
+declare TIMEOUT_VAL="120"
 declare STRICT_MODE=0
 declare FORK=0
 declare C_ARGS=""
@@ -420,12 +420,12 @@ function cs_test {
 
 	start_time=$(date '+%s')
 
-	s_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${S_ARGS} -s $S_INTERFACE"
+	s_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s $S_INTERFACE"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
 	s_pid=$!
 	sleep 1
 
-	c_cmd="gdb -batch -ex "run" -ex "bt" -ex "quit" --args ${BIN_PATH}${test_exe} ${C_ARGS} -s $C_INTERFACE $S_INTERFACE"
+	c_cmd="${BIN_PATH}${test_exe} ${C_ARGS} -s $C_INTERFACE $S_INTERFACE"
 	${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_outp &
 	c_pid=$!
 
@@ -566,7 +566,6 @@ function multinode_test {
 	
 	s_cmd="${BIN_PATH}${test_exe} ${S_ARGS} -s ${S_INTERFACE}"
 	${SERVER_CMD} "${EXPORT_ENV} $s_cmd" &> $s_outp &
-	echo "Server Started"
 	s_pid=$!
 	sleep 1
 	
@@ -578,16 +577,14 @@ function multinode_test {
 		${CLIENT_CMD} "${EXPORT_ENV} $c_cmd" &> $c_out & 
 		c_pid_arr+=($!)
 		c_out_arr+=($c_out)
-		echo "Client $i started"
 	done
 
 	for pid in ${c_pid_arr[*]}; do
 		wait $pid
 		c_ret=($?)||$c_ret
-		echo "Client finished"
 	done
 	
-	#[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
+	[[ c_ret -ne 0 ]] && kill -9 $s_pid 2> /dev/null
 
 	wait $s_pid
 	s_ret=$?
@@ -596,7 +593,7 @@ function multinode_test {
 	end_time=$(date '+%s')
 	test_time=$(compute_duration "$start_time" "$end_time")
 	
-	local pe=1
+	pe=1
 	if [[ $STRICT_MODE -eq 0 && $s_ret -eq $FI_ENODATA && $c_ret -eq $FI_ENODATA ]] ||
 	   [[ $STRICT_MODE -eq 0 && $s_ret -eq $FI_ENOSYS && $c_ret -eq $FI_ENOSYS ]]; then
 		print_results "$test_exe" "Notrun" "$test_time" "$s_outp" "$s_cmd" "" "$c_cmd"
@@ -604,7 +601,7 @@ function multinode_test {
 		do
 			printf -- "  client_stdout $pe: |\n"
 			sed -e 's/^/    /' < $c_out
-			pe+=1
+			pe=$((pe+1))
 		done
 		skip_count+=1
 	elif [ $s_ret -ne 0 -o $c_ret -ne 0 ]; then
@@ -613,7 +610,7 @@ function multinode_test {
 		do
 			printf -- "  client_stdout $pe: |\n"
 			sed -e 's/^/    /' < $c_out
-			pe+=1
+			pe=$((pe+1))
 		done
 		if [ $s_ret -eq 124 -o $c_ret -eq 124 ]; then
 			cleanup
@@ -625,7 +622,7 @@ function multinode_test {
 		do
 			printf -- "  client_stdout $pe: |\n"
 			sed -e 's/^/    /' < $c_out
-			pe+=1 
+			pe=$((pe+1))
 		done
 		pass_count+=1
 	fi
@@ -655,12 +652,12 @@ function main {
 	
 
 	if [[ $1 == "quick" ]]; then
-		local -r tests="multinode"
+		local -r tests="unit functional short multinode"
 	elif [[ $1 == "verify" ]]; then
 		local -r tests="complex"
 		complex_type=$1
 	else
-		local -r tests=$(echo $1 | sed 's/all/unit,functional,standard,complex/g' | tr ',' ' ')
+		local -r tests=$(echo $1 | sed 's/all/unit,functional,standard,complex,multinode/g' | tr ',' ' ')
 		if [[ $1 == "all" || $1 == "complex" ]]; then
 			complex_type="all"
 		fi
